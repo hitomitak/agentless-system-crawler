@@ -40,4 +40,3 @@ class PacketHostCrawler(IHostCrawler):
                 ifname=self.default_ifname, 
                 feature_type = self.feature_type)
 
-
