@@ -1,0 +1,8 @@
+[Core]
+Name = application_packet_host
+Module = packet_host_crawler
+
+[Documentation]
+Author = IBM
+Version = 0.1
+Description = "Packet Analyzer"
