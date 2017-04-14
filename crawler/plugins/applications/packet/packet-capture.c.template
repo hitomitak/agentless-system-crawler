@@ -1,7 +1,8 @@
 #include <uapi/linux/ptrace.h>
 #include <net/sock.h>
 #include <bcc/proto.h>
-#include "/root/agentless-system-crawler-git/crawler/plugins/applications/packet/proto_num.h"
+HEADER_FILE
+
 #define IP_TCP 	6   
 #define ETH_HLEN 14
 
