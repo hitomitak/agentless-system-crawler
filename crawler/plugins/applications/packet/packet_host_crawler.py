@@ -17,15 +17,20 @@ class PacketHostCrawler(IHostCrawler):
         return self.feature_key 
 
     def crawl(self, **options): 
+        config_switch = {}
 
-        print "call pkt crawler"
-        '''
-        if "port" in options:
-            default_port = optinos["port"]
+        if "ifname" in options:
+            default_ifname = options["ifname"]
 
-        if "interval" in optinos:
+        if "interval" in options:
             default_interval = options["interval"]
-        '''
+
+        if "proto_switch" in options:
+            split_proto = options["proto_switch"].split(",")
+            for each_proto in split_proto:
+                value = each_proto.split(":")
+                config_switch[int(value[0])] = value[1]
+            default_proto_switch = config_switch
 
         return packet_crawler.retrieve_metrics( 
                 host='localhost', 

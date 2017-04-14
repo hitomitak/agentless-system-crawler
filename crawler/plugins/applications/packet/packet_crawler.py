@@ -42,14 +42,13 @@ def format_metrics(metric):
 
 def retrieve_metrics(host='localhost', proto_switch={ 80: "http_parser"}, 
         interval=30, ifname="eth0", feature_type='packet'):
-    print "input retrive_metrics"
+
     packet_counter = 0 
     connection_list = {}
     switch_len = len(proto_switch)
     key_count = 0
     str_header_value = ""
     for key in proto_switch:
-        print key
         str_header_value += str(key)
         key_count += 1
         if key_count < switch_len:
@@ -61,24 +60,38 @@ def retrieve_metrics(host='localhost', proto_switch={ 80: "http_parser"},
     f.write("static unsigned short proto_num[PROTO_NUM] = {" + str_header_value + "};\n")
     f.close()
 
-    print "call bpf"
+    file_path = os.path.dirname( os.path.abspath( __file__ ) ) 
+    template_file = open(file_path + "/" +'packet-capture.c.template', 'r')
+    template_lines = template_file.readlines()
+    template_file.close()
+
+    write_file = open(file_path + "/" +'packet-capture.c', 'w')
+
+    for line in  template_lines:
+        if "HEADER_FILE" in line:
+            header_path = file_path + "/" +'proto_num.h'
+            strhdr = "#include \"" + header_path + "\""
+            write_file.write(strhdr)
+
+        else:
+            write_file.write(line)
+
+    write_file.close()
+
+
     bpf = BPF(src_file = file_path+ "/" + "packet-capture.c",debug = 0)
-    print "return bpf"
     function_http_filter = bpf.load_func("packet_filter", BPF.SOCKET_FILTER)
     BPF.attach_raw_socket(function_http_filter, ifname)
 
     socket_fd = function_http_filter.sock
     sock = socket.fromfd(socket_fd,socket.PF_PACKET,socket.SOCK_RAW,socket.IPPROTO_IP)
-    print "socket"
     sock.setblocking(True)
     call_time = datetime.now()
 
     while 1:
-        print "input while"
         now_time = datetime.now() 
         diff_time = now_time - call_time
 
-        print diff_time
         if diff_time.total_seconds() > interval:
             for key in proto_switch:
                 protocol = proto_switch[key]
@@ -93,7 +106,6 @@ def retrieve_metrics(host='localhost', proto_switch={ 80: "http_parser"},
                             each_metric[2],
                             each_metric[3]
                     )
-                    print metric_feature
                     yield("packet", metric_feature, feature_type)
             return
 
