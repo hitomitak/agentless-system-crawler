@@ -158,6 +158,8 @@ def retrieve_metrics(host=['localhost'], proto_switch={ 80: "http_parser"},
         ip_header_length = packet_bytearray[ETH_HLEN]               #load Byte 
         ip_header_length = ip_header_length & 0x0F                  #mask bits 0..3 
         ip_header_length = ip_header_length << 2                    #shift to obtain length 
+        #print ip_header_length
+
         ip_header_pointer = ETH_HLEN 
         ip_header = packet_bytearray[ETH_HLEN:ETH_HLEN+ip_header_length] 
         ip_header_array = struct.unpack('!BBHHHBBH4s4s', ip_header) 
