@@ -3,7 +3,7 @@ import urllib2
 import socket
 import os
 import select
-from datetime import *
+import datetime
 import binascii
 import time
 import connection
@@ -15,7 +15,11 @@ from plugins.applications.packet import http_parser
 
 #from utils.crawler_exceptions import CrawlError
 
-CLEANUP_N_PACKETS  = 200 
+create_files = 0
+bpf = None
+function_http_filter = None
+socket_fd = None
+sock = None
 
 def cleanup(connection_list):
     for hkey, each_conn in connection_list.items():
@@ -43,56 +47,72 @@ def format_metrics(metric):
 def retrieve_metrics(host='localhost', proto_switch={ 80: "http_parser"}, 
         interval=30, ifname="eth0", feature_type='packet'):
 
+    global create_files
+    global bpf
+    global function_http_filter
+    global socket_fd
+    global sock
     packet_counter = 0 
     connection_list = {}
-    switch_len = len(proto_switch)
-    key_count = 0
-    str_header_value = ""
-    for key in proto_switch:
-        str_header_value += str(key)
-        key_count += 1
-        if key_count < switch_len:
-            str_header_value +=','
-
-    file_path = os.path.dirname( os.path.abspath( __file__ ) ) 
-    f = open(file_path + "/" +'proto_num.h', 'w')
-    f.write("#define PROTO_NUM %d \n"%switch_len)
-    f.write("static unsigned short proto_num[PROTO_NUM] = {" + str_header_value + "};\n")
-    f.close()
-
-    file_path = os.path.dirname( os.path.abspath( __file__ ) ) 
-    template_file = open(file_path + "/" +'packet-capture.c.template', 'r')
-    template_lines = template_file.readlines()
-    template_file.close()
-
-    write_file = open(file_path + "/" +'packet-capture.c', 'w')
-
-    for line in  template_lines:
-        if "HEADER_FILE" in line:
-            header_path = file_path + "/" +'proto_num.h'
-            strhdr = "#include \"" + header_path + "\""
-            write_file.write(strhdr)
-
-        else:
-            write_file.write(line)
-
-    write_file.close()
 
 
-    bpf = BPF(src_file = file_path+ "/" + "packet-capture.c",debug = 0)
-    function_http_filter = bpf.load_func("packet_filter", BPF.SOCKET_FILTER)
-    BPF.attach_raw_socket(function_http_filter, ifname)
+    if create_files == 0:
+        switch_len = len(proto_switch)
+        key_count = 0
+        str_header_value = ""
+        for key in proto_switch:
+            str_header_value += str(key)
+            key_count += 1
+            if key_count < switch_len:
+                str_header_value +=','
 
-    socket_fd = function_http_filter.sock
-    sock = socket.fromfd(socket_fd,socket.PF_PACKET,socket.SOCK_RAW,socket.IPPROTO_IP)
-    sock.setblocking(True)
-    call_time = datetime.now()
+        file_path = os.path.dirname( os.path.abspath( __file__ ) ) 
+        f = open(file_path + "/" +'proto_num.h', 'w')
+        f.write("#define PROTO_NUM %d \n"%switch_len)
+        f.write("static unsigned short proto_num[PROTO_NUM] = {" + str_header_value + "};\n")
+        f.close()
+
+        file_path = os.path.dirname( os.path.abspath( __file__ ) ) 
+        template_file = open(file_path + "/" +'packet-capture.c.template', 'r')
+        template_lines = template_file.readlines()
+        template_file.close()
+
+        write_file = open(file_path + "/" +'packet-capture.c', 'w')
+
+        for line in  template_lines:
+            if "HEADER_FILE" in line:
+                header_path = file_path + "/" +'proto_num.h'
+                strhdr = "#include \"" + header_path + "\""
+                write_file.write(strhdr)
+
+            else:
+                write_file.write(line)
+
+        write_file.close()
+        create_files = 1
+
+        bpf = BPF(src_file = file_path+ "/" + "packet-capture.c",debug = 0)
+
+        function_http_filter = bpf.load_func("packet_filter", BPF.SOCKET_FILTER)
+        BPF.attach_raw_socket(function_http_filter, ifname)
+
+        socket_fd = function_http_filter.sock
+
+        sock = socket.fromfd(socket_fd,socket.PF_PACKET,socket.SOCK_RAW,socket.IPPROTO_IP)
+        sock.setblocking(False)
+
+    polling_time = datetime.timedelta(seconds=int(interval))
+    call_time = datetime.datetime.now() + polling_time
 
     while 1:
-        now_time = datetime.now() 
-        diff_time = now_time - call_time
+        now_time = datetime.datetime.now() 
+        diff_time = 0
 
-        if diff_time.total_seconds() > interval:
+        if call_time > now_time:
+            diff_time = call_time - now_time
+
+        if (call_time <= now_time) or diff_time.total_seconds() < 0.5:
+
             for key in proto_switch:
                 protocol = proto_switch[key]
                 ps = globals()[protocol] 
@@ -107,15 +127,20 @@ def retrieve_metrics(host='localhost', proto_switch={ 80: "http_parser"},
                             each_metric[3]
                     )
                     yield("packet", metric_feature, feature_type)
+
+            metric = ps.reset_metrics() 
+            cleanup(connection_list)
             return
 
-        timeout = interval - diff_time.total_seconds()
-        #print "set timeout %d"%timeout
+        timeout = diff_time.total_seconds()
+        timeout = round(timeout)
         r, w, e = select.select([socket_fd], [], [], timeout)
         if len (r) == 0:
             continue
         elif len (r) == 1: 
             packet_str = os.read(socket_fd,4096) #set packet length to max packet length on the interface 
+            if not packet_str:
+                break
 
         packet_counter += 1 
 
@@ -129,6 +154,7 @@ def retrieve_metrics(host='localhost', proto_switch={ 80: "http_parser"},
         ip_header_length = packet_bytearray[ETH_HLEN]               #load Byte 
         ip_header_length = ip_header_length & 0x0F                  #mask bits 0..3 
         ip_header_length = ip_header_length << 2                    #shift to obtain length 
+        #print ip_header_length
 
         ip_header_pointer = ETH_HLEN 
         ip_header = packet_bytearray[ETH_HLEN:ETH_HLEN+ip_header_length] 
@@ -193,6 +219,4 @@ def retrieve_metrics(host='localhost', proto_switch={ 80: "http_parser"},
             cls = globals()[parser] 
             cls.parser(conn) 
 
-        if (((packet_counter) % CLEANUP_N_PACKETS) == 0): 
-            cleanup(connection_list)
 
