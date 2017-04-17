@@ -20,17 +20,17 @@ class PacketHostCrawler(IHostCrawler):
         config_switch = {}
 
         if "ifname" in options:
-            default_ifname = options["ifname"]
+            self.default_ifname = options["ifname"]
 
         if "interval" in options:
-            default_interval = options["interval"]
+            self.default_interval = options["interval"]
 
         if "proto_switch" in options:
             split_proto = options["proto_switch"].split(",")
             for each_proto in split_proto:
                 value = each_proto.split(":")
                 config_switch[int(value[0])] = value[1]
-            default_proto_switch = config_switch
+            self.default_proto_switch = config_switch
 
         return packet_crawler.retrieve_metrics( 
                 host='localhost', 
@@ -38,4 +38,5 @@ class PacketHostCrawler(IHostCrawler):
                 interval=self.default_interval, 
                 ifname=self.default_ifname, 
                 feature_type = self.feature_type)
+
 

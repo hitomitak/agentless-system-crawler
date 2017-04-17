@@ -133,6 +133,11 @@ def parser_rep_pkt(pkt, conn):
 def return_metrics():
     return metrics_list
 
+def reset_metrics():
+    global metrics_list
+    del metrics_list[:]
+
+
 def parser(conn):
 
     pkt_q = conn.dequeue()
