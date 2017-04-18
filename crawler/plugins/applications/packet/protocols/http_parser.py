@@ -2,8 +2,8 @@ from BaseHTTPServer import BaseHTTPRequestHandler
 from StringIO import StringIO
 from httplib import HTTPResponse
 import Queue 
-import connection
-import packet
+from plugins.applications.packet import connection
+from plugins.applications.packet import packet
 import hashlib
 import socket
 import metrics

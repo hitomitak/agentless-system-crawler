@@ -1,12 +1,14 @@
-from icrawl_plugin import IHostCrawler
+import logging
+
+import dockercontainer
+from icrawl_plugin import IContainerCrawler
 from plugins.applications.packet import packet_crawler
 from utils.crawler_exceptions import CrawlError
-import logging
 
 logger = logging.getLogger('crawlutils')
 
 
-class PacketHostCrawler(IHostCrawler):
+class PacketContainerCrawler(IContainerCrawler):
     feature_type = 'application'
     feature_key = 'packet'
     default_proto_switch = { 80 :'http_parser'}
@@ -17,7 +19,7 @@ class PacketHostCrawler(IHostCrawler):
     def get_feature(self): 
         return self.feature_key 
 
-    def crawl(self, **options): 
+    def crawl(self, container_id=None, **options):
         config_switch = {}
 
         if "ifname" in options:
@@ -39,5 +41,3 @@ class PacketHostCrawler(IHostCrawler):
                 interval=self.default_interval, 
                 ifname=self.default_ifname, 
                 feature_type = self.feature_type)
-
-
