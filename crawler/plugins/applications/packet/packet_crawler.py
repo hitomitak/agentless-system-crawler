@@ -11,7 +11,7 @@ import packet
 import hashlib
 import struct 
 from plugins.applications.packet import feature
-from plugins.applications.packet import http_parser
+from plugins.applications.packet.protocols import http_parser
 
 #from utils.crawler_exceptions import CrawlError
 
