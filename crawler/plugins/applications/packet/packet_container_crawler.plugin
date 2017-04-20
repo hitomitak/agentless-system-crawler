@@ -11,3 +11,4 @@ Description = "Packet Analyzer"
 ifname = interface name to capture packets (defautl:eth1)
 interval = interval for captiuring packet (defualt:30sec)
 proto_switch = specify the monitoring port (port:parser_module,port2:parser_module2) (default:80:http_parser)
+monitor_address = specify monitoring address (default: all address monitoring)

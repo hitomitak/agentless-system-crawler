@@ -15,6 +15,7 @@ class PacketContainerCrawler(IContainerCrawler):
     #default_interval = 30
     default_interval = 5
     default_ifname="eth0"
+    default_host = ['localhost']
 
     def get_feature(self): 
         return self.feature_key 
@@ -35,8 +36,11 @@ class PacketContainerCrawler(IContainerCrawler):
                 config_switch[int(value[0])] = value[1]
             self.default_proto_switch = config_switch
 
+        if "monitor_address" in options:
+            self.default_host =  options["monitor_address"]
+
         return packet_crawler.retrieve_metrics( 
-                host='localhost', 
+                host=self.default_host, 
                 proto_switch=self.default_proto_switch,
                 interval=self.default_interval, 
                 ifname=self.default_ifname, 
