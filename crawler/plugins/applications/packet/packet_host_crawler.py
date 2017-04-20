@@ -34,7 +34,7 @@ class PacketHostCrawler(IHostCrawler):
             self.default_proto_switch = config_switch
 
         return packet_crawler.retrieve_metrics( 
-                host='localhost', 
+                host=['localhost'], 
                 proto_switch=self.default_proto_switch,
                 interval=self.default_interval, 
                 ifname=self.default_ifname, 
