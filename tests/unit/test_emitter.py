@@ -49,7 +49,7 @@ def mocked_formatter2(frame):
                     json.dumps(metadata, separators=(',', ':'))))
     return iostream
 
-def mocked_get_sas_token():
+def mocked_get_sas_token(metadata):
     return ('sas-token', 'cloudoe', 'access-group')
 
 class RandomKafkaException(Exception):
@@ -544,6 +544,12 @@ class EmitterTests(unittest.TestCase):
         emitter.emit('frame')
         # there are no retries for encoding errors
         self.assertEqual(mock_post.call_count, 1)
+
+    def test_emitter_get_sas_token_from_extraMetadata(self):
+        metadata_sample = {"token":"test1", "cloudoe_id":"test2", "access_group":"test3"}
+        emitter = SasEmitter()
+        (token, cloudoe_id, access_group) = emitter.get_sas_tokens(metadata=metadata_sample)
+        assert (token, cloudoe_id, access_group) == ("test1", "test2", "test3")
 
     @mock.patch('plugins.emitters.kafka_emitter.KafkaEmitter.connect_to_broker',
                 side_effect=MockedKafkaConnect, autospec=True)

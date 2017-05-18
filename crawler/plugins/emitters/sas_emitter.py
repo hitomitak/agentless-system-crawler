@@ -38,6 +38,7 @@ class SasEmitter(BaseHttpEmitter, IEmitter):
         self.token_filepath = kwargs.get("token_filepath", "")
         self.access_group_filepath = kwargs.get("access_group_filepath", "")
         self.cloudoe_filepath = kwargs.get("cloudoe_filepath", "")
+        self.ssl_verification = kwargs.get("ssl_verification", "")
 
         iostream = self.format(frame)
         if compress:
@@ -57,7 +58,26 @@ class SasEmitter(BaseHttpEmitter, IEmitter):
     Current model of secret deployment in k8s is through mounting
     'secret' inside crawler container.
     '''
-    def get_sas_tokens(self):
+    def get_sas_tokens(self, metadata=None):
+
+        token_key = {"token", "cloudoe_id", "access_group"}
+        metadata_token = True
+        for key in token_key:
+            if key not in metadata:
+                metadata_token = False
+
+        if metadata_token:
+            token = metadata["token"]
+            del metadata["token"]
+
+            cloudoe = metadata["cloudoe_id"]
+            del metadata["cloudoe_id"]
+
+            access_group = metadata["access_group"]
+            del metadata["access_group"]
+
+            return(token, cloudoe, access_group)
+
         assert(os.path.exists(self.token_filepath))
         assert(os.path.exists(self.access_group_filepath))
         assert(os.path.exists(self.cloudoe_filepath))
@@ -99,7 +119,7 @@ class SasEmitter(BaseHttpEmitter, IEmitter):
     def post(self, content='', metadata={}):
         (namespace, timestamp, features, system_type) =\
             self.__parse_crawl_metadata(content)
-        (token, cloudoe, access_group) = self.get_sas_tokens()
+        (token, cloudoe, access_group) = self.get_sas_tokens(metadata=metadata)
         headers = {'content-type': 'application/csv'}
         headers.update({'Cloud-OE-ID': cloudoe})
         headers.update({'X-Auth-Token': token})
@@ -113,11 +133,15 @@ class SasEmitter(BaseHttpEmitter, IEmitter):
 
         self.url = self.url.replace('sas:', 'https:')
 
+        verify = True
+        if self.ssl_verification == "False":
+            verify = False
+
         for attempt in range(self.max_retries):
             try:
                 response = requests.post(self.url, headers=headers,
                                          params=params,
-                                         data=content)
+                                         data=content, verify=verify)
             except requests.exceptions.ChunkedEncodingError as e:
                 logger.exception(e)
                 logger.error(
