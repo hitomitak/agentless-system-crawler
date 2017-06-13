@@ -44,7 +44,7 @@ def format_metrics(metric):
 
     return  metrics_list
 
-def retrieve_metrics(host='localhost', proto_switch={ 80: "http_parser"}, 
+def retrieve_metrics(host=['localhost'], proto_switch={ 80: "http_parser"}, 
         interval=30, ifname="eth0", feature_type='packet'):
 
     global create_files
@@ -54,7 +54,8 @@ def retrieve_metrics(host='localhost', proto_switch={ 80: "http_parser"},
     global sock
     packet_counter = 0 
     connection_list = {}
-
+    filter_on = False
+    filter_list = []
 
     if create_files == 0:
         switch_len = len(proto_switch)
@@ -103,6 +104,9 @@ def retrieve_metrics(host='localhost', proto_switch={ 80: "http_parser"},
 
     polling_time = datetime.timedelta(seconds=int(interval))
     call_time = datetime.datetime.now() + polling_time
+
+    if host[0] != "localhost":
+        filter_on = True
 
     while 1:
         now_time = datetime.datetime.now() 
@@ -170,6 +174,18 @@ def retrieve_metrics(host='localhost', proto_switch={ 80: "http_parser"},
         ip_src = ip_header_array[8] 
         ip_dst = ip_header_array[9] 
 
+        if filter_on:
+            find = False
+            src_addr = socket.inet_ntoa(ip_src) 
+            dst_addr = socket.inet_ntoa(ip_dst) 
+
+            for filter_addr in host:
+                if (src_addr == filter_addr) or  (dst_addr == filter_addr):
+                    find = True
+
+            if not find:
+                continue
+                    
         #print("iplen %d"%ip_len) 
         #print(socket.inet_ntoa(ip_src)) 
         #print(socket.inet_ntoa(ip_dst)) 
