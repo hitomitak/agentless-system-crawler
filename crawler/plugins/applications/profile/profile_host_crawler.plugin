@@ -1,0 +1,11 @@
+[Core]
+Name = application_profile_host
+Module = profile_host_crawler
+
+[Documentation]
+Author = IBM
+Version = 0.1
+Description = "Profile Analyzer"
+
+[Options]
+interval = interval for captiuring profile (defualt:5sec)
