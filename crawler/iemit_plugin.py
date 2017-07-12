@@ -3,7 +3,8 @@ from yapsy.IPlugin import IPlugin
 from formatters import (write_in_csv_format,
                         write_in_json_format,
                         write_in_graphite_format,
-                        write_in_logstash_format)
+                        write_in_logstash_format,
+                        write_in_profile_format)
 from utils.crawler_exceptions import (EmitterUnsupportedFormat)
 
 
@@ -25,7 +26,8 @@ class IEmitter(IPlugin):
         self.supported_formats = {'csv': write_in_csv_format,
                                   'graphite': write_in_graphite_format,
                                   'json': write_in_json_format,
-                                  'logstash': write_in_logstash_format}
+                                  'logstash': write_in_logstash_format,
+                                  'profile': write_in_profile_format}
 
         if emit_format in self.supported_formats:
             self.formatter = self.supported_formats[emit_format]

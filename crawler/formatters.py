@@ -39,6 +39,29 @@ def write_in_json_format(iostream, frame):
         iostream.write('%s\n' % json.dumps(val))
 
 
+def write_in_profile_format(iostream, frame):
+    """
+    Writes frame data and meta data in json format.
+    Similar to write_in_json_format, but this method concatenate them
+    in to a single json object.
+
+    :param iostream: a CStringIO used to buffer the formatted features.
+    :param frame: a BaseFrame Object to be written into iostream
+    :return: None
+    """
+    value_array = []
+    local_payload = {}
+    local_payload['metadata'] = frame.metadata
+    for (key, val, feature_type) in frame.data:
+        if not isinstance(val, dict):
+            val = val._asdict()
+        if feature_type not in local_payload:
+            local_payload[feature_type] = {}
+        value_array.append(val)
+        local_payload[feature_type][key] = value_array
+    #print('%s\n' % json.dumps(local_payload))
+    iostream.write('%s\n' % json.dumps(local_payload))
+
 def write_in_logstash_format(iostream, frame):
     """
     Writes frame data and meta data in json format.
