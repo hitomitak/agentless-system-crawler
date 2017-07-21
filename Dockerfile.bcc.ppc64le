@@ -1,0 +1,29 @@
+FROM ppc64le/ubuntu:16.04
+
+WORKDIR /crawler
+
+RUN apt-get update
+RUN apt-get install apt-transport-https python2.7 -y
+RUN apt-get update 
+ENV PYTHONPATH=/usr/lib/python2.7/dist-packages/
+
+COPY requirements.txt /crawler/requirements.txt
+RUN apt-get install python-setuptools -y
+RUN easy_install pip
+RUN apt-get install python-dev gcc -y
+RUN pip install -r requirements.txt
+
+ENV PYTHONPATH=/usr/lib/python2.7/dist-packages:/usr/local/lib/python2.7/site-packages
+
+RUN apt-get install -y wget
+RUN wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.9/linux-headers-4.9.0-040900-generic_4.9.0-040900.201612111631_ppc64el.deb
+RUN wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.9/linux-headers-4.9.0-040900_4.9.0-040900.201612111631_all.deb
+RUN apt-get install -y libelf1
+COPY pkg/*.deb /crawler/
+RUN dpkg -i *.deb
+RUN rm -rf *.deb
+
+
+ADD crawler /crawler
+
+ENTRYPOINT [ "python2.7", "crawler.py" ]
