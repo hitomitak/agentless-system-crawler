@@ -1,0 +1,11 @@
+[Core]
+Name = application_offcpu_host
+Module = offcpu_host_crawler
+
+[Documentation]
+Author = IBM
+Version = 0.1
+Description = "Off CPU Analyzer"
+
+[Options]
+interval = interval for captiuring profile (defualt:5sec)
