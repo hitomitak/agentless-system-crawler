@@ -14,7 +14,7 @@ class ProfileHostCrawler(IHostCrawler):
 
     def crawl(self, **options):
         if "duration" in options:
-            self.duration = options["duration"]
+            self.duration = int(options["duration"])
 
         return profile_crawler.retrieve_metrics(duration=self.duration)
 

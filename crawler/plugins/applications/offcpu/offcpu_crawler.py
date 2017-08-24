@@ -59,12 +59,13 @@ def retrieve_metrics(duration=5, feature_type='application'):
     folded = True
     stack_storage_size = 10240
     pid = None
+    bpf_txt = ""
 
     debug = 0
     need_delimiter = delimited and not (kernel_stacks_only or
             user_stacks_only)
 
-    #
+#
 # Setup BPF
 #
 
@@ -173,7 +174,6 @@ int oncpu(struct pt_regs *ctx, struct task_struct *prev) {
     b = BPF(text=bpf_text)
     b.attach_kprobe(event="finish_task_switch", fn_name="oncpu")
     matched = b.num_open_kprobes()
-
     if matched == 0:
         print("error: 0 functions traced. Exiting.")
         exit(1)
@@ -231,6 +231,7 @@ int oncpu(struct pt_regs *ctx, struct task_struct *prev) {
             print("    %-16s %s (%d)" % ("-", k.name.decode(), k.pid))
             print("        %d\n" % v.value)
 
+    b.detach_kprobe(event="finish_task_switch")
     if missing_stacks > 0:
         enomem_str = "" if not has_enomem else \
             " Consider increasing --stack-storage-size."

@@ -42,7 +42,7 @@ class ProfileContainerCrawler(IContainerCrawler):
                 pid_array.append(each_ps[2])
 
         if "duration" in options:
-            self.duration = options["duration"]
+            self.duration = int(options["duration"])
 
         if not "time" in profile_cache:
             self.get_profile()
